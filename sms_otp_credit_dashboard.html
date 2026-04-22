@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privage SMS OTP Credit Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --privage-purple: #8f288c;
+            --privage-purple-light: #f3e0f3;
+            --privage-purple-dark: #6b1d69;
+            --privage-orange: #f1684d;
+            --privage-orange-light: #fde8e4;
+            --privage-gradient: linear-gradient(135deg, #f1684d, #8f288c);
+            --privage-gradient-soft: linear-gradient(135deg, #f1684d33, #8f288c33);
+            --bg: #f7f5fa;
+            --card-bg: #ffffff;
+            --text-primary: #2d2040;
+            --text-secondary: #6b5e7a;
+            --text-muted: #9b8faa;
+            --border: #e8e0f0;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+        .dashboard {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        /* Brand gradient top bar */
+        .brand-bar {
+            height: 4px;
+            background: var(--privage-gradient);
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 999;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-left .logo {
+            width: 48px; height: 48px;
+            background: var(--privage-gradient);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: 20px;
+            box-shadow: 0 4px 14px rgba(143, 40, 140, 0.3);
+        }
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-primary);
+            background: var(--privage-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header .subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            -webkit-text-fill-color: var(--text-muted);
+        }
+        .filters {
+            display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+        }
+        .filters select, .filters input {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--card-bg);
+            cursor: pointer;
+            color: var(--text-primary);
+        }
+        .filters select:focus {
+            outline: none;
+            border-color: var(--privage-purple);
+            box-shadow: 0 0 0 3px rgba(143, 40, 140, 0.12);
+        }
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(143, 40, 140, 0.06);
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(143, 40, 140, 0.12);
+        }
+        .kpi-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .kpi-value {
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .kpi-value.purple { color: var(--privage-purple); }
+        .kpi-value.teal { color: var(--privage-orange); }
+        .kpi-value.amber { color: #c4621a; }
+        .kpi-value.rose { color: #d42f4e; }
+        .kpi-value.green { color: #10b981; }
+        .kpi-value.gradient {
+            background: var(--privage-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .kpi-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .chart-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 800px) {
+            .chart-row { grid-template-columns: 1fr; }
+        }
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(143, 40, 140, 0.06);
+            border: 1px solid var(--border);
+        }
+        .chart-card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+        .chart-card canvas {
+            max-height: 300px;
+        }
+        .table-section {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(143, 40, 140, 0.06);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+        .table-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        thead th {
+            background: var(--privage-purple-light);
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--privage-purple);
+            border-bottom: 2px solid var(--border);
+            cursor: pointer;
+            white-space: nowrap;
+            user-select: none;
+        }
+        thead th:hover { background: #e8d0e8; }
+        thead th .sort-arrow { margin-left: 4px; font-size: 10px; color: #c9a0c8; }
+        thead th.sorted .sort-arrow { color: var(--privage-purple); }
+        tbody td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        tbody tr:hover { background: #fdf5fd; }
+        .plan-badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .plan-badge.starter { background: var(--privage-orange-light); color: #a83d28; }
+        .plan-badge.standard { background: var(--privage-purple-light); color: var(--privage-purple); }
+        .plan-badge.freemium { background: #f0e6f0; color: var(--privage-purple-dark); }
+        .credit-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .credit-bar .bar-bg {
+            flex: 1;
+            height: 8px;
+            background: #f0f0f5;
+            border-radius: 4px;
+            overflow: hidden;
+            min-width: 60px;
+        }
+        .credit-bar .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+            background: var(--privage-gradient) !important;
+        }
+        .credit-bar .bar-num {
+            font-weight: 600;
+            min-width: 50px;
+            text-align: right;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-dot.active { background: #10b981; }
+        .status-dot.expiring { background: var(--privage-orange); }
+        .status-dot.expired { background: #d42f4e; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #aaa;
+        }
+        .analysis-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(143, 40, 140, 0.06);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .analysis-card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+        }
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+        }
+        .analysis-item {
+            padding: 14px;
+            background: #fdf5fd;
+            border-radius: 10px;
+            border-left: 4px solid var(--privage-purple);
+        }
+        .analysis-item .title { font-weight: 600; font-size: 13px; margin-bottom: 4px; color: var(--privage-purple-dark); }
+        .analysis-item .detail { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+        .highlight { color: var(--privage-purple); font-weight: 700; }
+        .warning-text { color: var(--privage-orange); font-weight: 600; }
+        /* Alert Panel */
+        .alert-panel {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(143, 40, 140, 0.06);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .alert-panel h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .alert-panel h3 .bell { font-size: 18px; }
+        .alert-list { display: flex; flex-direction: column; gap: 10px; }
+        .alert-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .alert-item.critical {
+            background: linear-gradient(135deg, #fde8e4, #fce4e9);
+            border-left: 4px solid #d42f4e;
+        }
+        .alert-item.warning {
+            background: linear-gradient(135deg, #fde8e4, #fef3c7);
+            border-left: 4px solid var(--privage-orange);
+        }
+        .alert-item.info {
+            background: var(--privage-purple-light);
+            border-left: 4px solid var(--privage-purple);
+        }
+        .alert-item .alert-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            width: 32px;
+            text-align: center;
+        }
+        .alert-item .alert-content { flex: 1; }
+        .alert-item .alert-title { font-weight: 600; margin-bottom: 2px; }
+        .alert-item .alert-detail { font-size: 12px; color: var(--text-secondary); }
+        .alert-item .alert-badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .alert-badge.days-30 { background: #d42f4e; color: #fff; }
+        .alert-badge.days-60 { background: var(--privage-orange); color: #fff; }
+        .alert-badge.days-90 { background: #f59e0b; color: #fff; }
+        .alert-badge.credit-low { background: var(--privage-purple); color: #fff; }
+        .no-alerts {
+            text-align: center;
+            padding: 24px;
+            color: #10b981;
+            font-weight: 600;
+        }
+        .no-alerts .check { font-size: 32px; display: block; margin-bottom: 8px; }
+
+        /* Renewal Timeline */
+        .timeline-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(143, 40, 140, 0.06);
+            border: 1px solid var(--border);
+            margin-bottom: 24px;
+        }
+        .timeline-card h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .timeline-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: background 0.15s;
+        }
+        .timeline-row:hover { background: #fdf5fd; }
+        .timeline-row .tl-name {
+            width: 180px;
+            font-weight: 600;
+            flex-shrink: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .timeline-row .tl-bar-wrap {
+            flex: 1;
+            height: 24px;
+            background: #f0f0f5;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        .timeline-row .tl-bar {
+            height: 100%;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #fff;
+            min-width: 40px;
+            transition: width 0.3s;
+        }
+        .timeline-row .tl-date {
+            width: 100px;
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+        @media print {
+            body { background: #fff; }
+            .filters { display: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="brand-bar"></div>
+<div class="dashboard">
+    <!-- HEADER -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">P</div>
+            <div>
+                <h1>Privage SMS OTP Credit Dashboard</h1>
+                <div class="subtitle">รายงานเครดิต SMS OTP ของทุกธุรกิจ — ข้อมูล ณ วันที่ 22 เม.ย. 2569 (อังคาร) | Week #2</div>
+            </div>
+        </div>
+        <div class="filters">
+            <select id="filterPlan" onchange="dashboard.applyFilters()">
+                <option value="all">ทุกแพลน</option>
+                <option value="Standard">Standard</option>
+                <option value="Starter">Starter</option>
+                <option value="Freemium">Freemium</option>
+            </select>
+            <select id="filterStatus" onchange="dashboard.applyFilters()">
+                <option value="all">ทุกสถานะ</option>
+                <option value="active">Active</option>
+                <option value="expiring">ใกล้หมดอายุ (&lt;90 วัน)</option>
+                <option value="expired">หมดอายุแล้ว</option>
+            </select>
+            <select id="sortBy" onchange="dashboard.applyFilters()">
+                <option value="totalCredits-desc">เครดิตรวม (มาก→น้อย)</option>
+                <option value="totalCredits-asc">เครดิตรวม (น้อย→มาก)</option>
+                <option value="name-asc">ชื่อ ก-ฮ</option>
+                <option value="expiry-asc">หมดอายุเร็วสุด</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- KPI ROW -->
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <!-- ALERT PANEL -->
+    <div class="alert-panel" id="alert-panel">
+        <h3><span class="bell">&#128276;</span> แจ้งเตือนต่ออายุ &amp; เครดิต SMS OTP</h3>
+        <div class="alert-list" id="alert-list"></div>
+    </div>
+
+    <!-- RENEWAL TIMELINE -->
+    <div class="timeline-card">
+        <h3>&#128197; Timeline การต่ออายุแพ็กเกจ (เรียงตามวันหมดอายุ)</h3>
+        <div class="timeline" id="renewal-timeline"></div>
+    </div>
+
+    <!-- RENEWAL & CREDIT ANALYSIS CHARTS -->
+    <div class="chart-row">
+        <div class="chart-card">
+            <h3>&#9200; นับถอยหลังต่ออายุ (วันที่เหลือ)</h3>
+            <canvas id="chartCountdown"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>&#128202; แนวโน้มเครดิต SMS OTP ที่เหลือ (ต่ำ→สูง)</h3>
+            <canvas id="chartCreditHealth"></canvas>
+        </div>
+    </div>
+
+    <!-- CHARTS -->
+    <div class="chart-row">
+        <div class="chart-card">
+            <h3>เครดิตรวม (ฟรี + เติมเงิน) แต่ละธุรกิจ</h3>
+            <canvas id="chartBar"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>สัดส่วนแพลน</h3>
+            <canvas id="chartDoughnut"></canvas>
+        </div>
+    </div>
+    <div class="chart-row">
+        <div class="chart-card">
+            <h3>Top 10 ธุรกิจ — เครดิตเติมเงินสูงสุด</h3>
+            <canvas id="chartTop10"></canvas>
+        </div>
+        <div class="chart-card">
+            <h3>ประมาณการใช้เครดิตเฉลี่ย/วัน (Estimated)</h3>
+            <canvas id="chartDailyEst"></canvas>
+        </div>
+    </div>
+
+    <!-- ANALYSIS -->
+    <div class="analysis-card">
+        <h3>วิเคราะห์การใช้เครดิต SMS OTP</h3>
+        <div class="analysis-grid" id="analysis-grid"></div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-section">
+        <h3>รายละเอียดเครดิต SMS OTP ทุกธุรกิจ</h3>
+        <table>
+            <thead id="table-head"></thead>
+            <tbody id="table-body"></tbody>
+        </table>
+    </div>
+
+    <div class="footer" style="border-top: 2px solid var(--border); margin-top: 20px; padding-top: 16px;">
+        <span style="background: var(--privage-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 600;">Privage</span> SMS OTP Credit Dashboard — สร้างโดย Claude สำหรับ Orn (RADA RICHNESS)<br>
+        อัปเดตทุกวันศุกร์ | Week #2: 22 เม.ย. 2569 | Baseline: 17 เม.ย. 2569
+    </div>
+</div>
+
+<script>
+// ─── DATA (snapshot: 22 Apr 2026 / 2569 — Week #2) ───
+const BUSINESSES = [
+    { name: "RADA RICHNESS", plan: "Starter", expiry: "2026-09-25", freeCredits: 20, paidCredits: 0 },
+    { name: "Beloft Hotel", plan: "Starter", expiry: "2026-09-08", freeCredits: 20, paidCredits: 500 },
+    { name: "K&T super", plan: "Standard", expiry: "2026-09-09", freeCredits: 0, paidCredits: 2674 },
+    { name: "DANILIFE", plan: "Starter", expiry: "2026-09-11", freeCredits: 20, paidCredits: 500 },
+    { name: "Dee Vio", plan: "Freemium", expiry: null, freeCredits: 20, paidCredits: 0 },
+    { name: "Zuzu Clinic", plan: "Starter", expiry: "2026-10-03", freeCredits: 11, paidCredits: 2824 },
+    { name: "Tensai Salon", plan: "Starter", expiry: "2026-11-25", freeCredits: 0, paidCredits: 1540 },
+    { name: "Qrocerthai", plan: "Starter", expiry: "2026-11-28", freeCredits: 20, paidCredits: 1000 },
+    { name: "มาหาหน่อย หม่าล่าทิ่ง", plan: "Standard", expiry: "2026-12-10", freeCredits: 4, paidCredits: 2840 },
+    { name: "System Excellent", plan: "Starter", expiry: "2027-01-14", freeCredits: 20, paidCredits: 500 },
+    { name: "YBN Thailand", plan: "Starter", expiry: "2027-03-20", freeCredits: 17, paidCredits: 1250 },
+    { name: "CMM HOME", plan: "Starter", expiry: "2027-03-05", freeCredits: 20, paidCredits: 0 },
+    { name: "Jniss Studio", plan: "Freemium", expiry: null, freeCredits: 20, paidCredits: 0 },
+    { name: "Skill Series", plan: "Starter", expiry: "2027-03-17", freeCredits: 20, paidCredits: 496 },
+    { name: "เกษตร 5 ดาว", plan: "Starter", expiry: "2027-03-09", freeCredits: 5, paidCredits: 1250 },
+    { name: "Chata ชะตา", plan: "Starter", expiry: "2027-03-26", freeCredits: 20, paidCredits: 0 },
+    { name: "ESC Park Rangsit", plan: "Standard", expiry: "2027-04-08", freeCredits: 19, paidCredits: 1250 },
+    { name: "Celeb Medical", plan: "Starter", expiry: "2027-03-30", freeCredits: 16, paidCredits: 500 }
+];
+
+// ─── WEEK #1 BASELINE (17 Apr 2026 / 2569) ───
+const WEEK1_DATA = [
+    { name: "RADA RICHNESS", freeCredits: 20, paidCredits: 0 },
+    { name: "Beloft Hotel", freeCredits: 20, paidCredits: 500 },
+    { name: "K&T super", freeCredits: 0, paidCredits: 2734 },
+    { name: "DANILIFE", freeCredits: 20, paidCredits: 500 },
+    { name: "Dee Vio", freeCredits: 20, paidCredits: 0 },
+    { name: "Zuzu Clinic", freeCredits: 12, paidCredits: 2824 },
+    { name: "Tensai Salon", freeCredits: 0, paidCredits: 324 },
+    { name: "Qrocerthai", freeCredits: 20, paidCredits: 1000 },
+    { name: "มาหาหน่อย หม่าล่าทิ่ง", freeCredits: 8, paidCredits: 2840 },
+    { name: "System Excellent", freeCredits: 20, paidCredits: 500 },
+    { name: "YBN Thailand", freeCredits: 19, paidCredits: 1250 },
+    { name: "CMM HOME", freeCredits: 20, paidCredits: 0 },
+    { name: "Jniss Studio", freeCredits: 20, paidCredits: 0 },
+    { name: "Skill Series", freeCredits: 20, paidCredits: 496 },
+    { name: "เกษตร 5 ดาว", freeCredits: 10, paidCredits: 1250 },
+    { name: "Chata ชะตา", freeCredits: 20, paidCredits: 0 },
+    { name: "ESC Park Rangsit", freeCredits: 19, paidCredits: 1250 },
+    { name: "Celeb Medical", freeCredits: 16, paidCredits: 500 }
+];
+const DAYS_BETWEEN_SNAPSHOTS = 5; // 17 Apr → 22 Apr
+
+// Historical weekly data (grows as Orn adds snapshots every Friday)
+const WEEKLY_SNAPSHOTS = [
+    { week: "17 เม.ย. 69", date: "2026-04-17", data: WEEK1_DATA.map(b => ({ name: b.name, total: b.freeCredits + b.paidCredits })) },
+    { week: "22 เม.ย. 69", date: "2026-04-22", data: BUSINESSES.map(b => ({ name: b.name, total: b.freeCredits + b.paidCredits })) }
+];
+
+// Delta calculations (real data from Week #1 → Week #2)
+const CREDIT_DELTAS = BUSINESSES.map(b => {
+    const w1 = WEEK1_DATA.find(w => w.name === b.name);
+    const prevTotal = w1 ? (w1.freeCredits + w1.paidCredits) : 0;
+    const currTotal = b.freeCredits + b.paidCredits;
+    const delta = prevTotal - currTotal; // positive = used credits
+    const netChange = currTotal - prevTotal; // positive = gained (e.g. top-up)
+    return {
+        name: b.name,
+        prevTotal,
+        currTotal,
+        delta,
+        netChange,
+        dailyAvg: Math.round((delta / DAYS_BETWEEN_SNAPSHOTS) * 100) / 100,
+        weeklyAvg: Math.round((delta / DAYS_BETWEEN_SNAPSHOTS) * 7 * 100) / 100,
+        topUp: netChange > 0 ? netChange : 0
+    };
+});
+
+const TODAY = new Date("2026-04-22");
+const COLORS = {
+    purple: '#8f288c', purpleLight: '#f3e0f3',
+    orange: '#f1684d', orangeLight: '#fde8e4',
+    amber: '#c4621a', amberLight: '#fde8e4',
+    rose: '#d42f4e', roseLight: '#fce4e9',
+    green: '#10b981', greenLight: '#d1fae5',
+    blue: '#8f288c',
+    teal: '#f1684d', tealLight: '#fde8e4',
+    // Gradient palette from orange → purple
+    gradients: ['#f1684d','#e8567a','#d94a8a','#c84097','#b535a0','#a12e9a','#8f288c','#7d2280','#6b1d69','#f17e6a','#e8907d','#d9a090','#c4b0a3','#a78bb8','#8f6cc8','#7c4dd8','#6b2ee8','#5a10f8']
+};
+
+function daysBetween(a, b) {
+    return Math.round((new Date(a) - new Date(b)) / 86400000);
+}
+function getStatus(expiry) {
+    if (!expiry) return 'active';
+    const days = daysBetween(expiry, TODAY);
+    if (days < 0) return 'expired';
+    if (days < 90) return 'expiring';
+    return 'active';
+}
+function getStatusLabel(s) {
+    return s === 'expired' ? 'หมดอายุ' : s === 'expiring' ? 'ใกล้หมดอายุ' : 'Active';
+}
+function fmt(n) { return n.toLocaleString('th-TH'); }
+
+class Dashboard {
+    constructor(data) {
+        this.rawData = data.map(b => {
+            const d = CREDIT_DELTAS.find(cd => cd.name === b.name);
+            const dailyUsage = this.estimateDailyUsage(b);
+            return {
+                ...b,
+                totalCredits: b.freeCredits + b.paidCredits,
+                status: getStatus(b.expiry),
+                daysLeft: b.expiry ? daysBetween(b.expiry, TODAY) : 9999,
+                weeklyDelta: d ? d.delta : 0,
+                estimatedDailyUsage: dailyUsage,
+                estimatedWeeklyUsage: Math.round(dailyUsage * 7 * 100) / 100
+            };
+        });
+        this.filteredData = [...this.rawData];
+        this.charts = {};
+        this.sortCol = null;
+        this.sortDir = 'asc';
+        this.init();
+    }
+
+    estimateDailyUsage(b) {
+        // Use REAL delta data from Week #1 → Week #2 (5 days apart)
+        const d = CREDIT_DELTAS.find(cd => cd.name === b.name);
+        if (d && d.delta > 0) return d.dailyAvg;
+        return 0;
+    }
+
+    init() {
+        this.renderAlerts();
+        this.renderRenewalTimeline();
+        this.renderKPIs();
+        this.renderCharts();
+        this.renderRenewalCharts();
+        this.renderAnalysis();
+        this.renderTable();
+    }
+
+    applyFilters() {
+        const plan = document.getElementById('filterPlan').value;
+        const status = document.getElementById('filterStatus').value;
+        const sort = document.getElementById('sortBy').value;
+
+        this.filteredData = this.rawData.filter(b => {
+            if (plan !== 'all' && b.plan !== plan) return false;
+            if (status !== 'all' && b.status !== status) return false;
+            return true;
+        });
+
+        const [sortKey, sortDir] = sort.split('-');
+        this.filteredData.sort((a, b) => {
+            let va, vb;
+            if (sortKey === 'totalCredits') { va = a.totalCredits; vb = b.totalCredits; }
+            else if (sortKey === 'name') { va = a.name; vb = b.name; }
+            else if (sortKey === 'expiry') { va = a.daysLeft; vb = b.daysLeft; }
+            if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+            return sortDir === 'asc' ? va - vb : vb - va;
+        });
+
+        this.renderKPIs();
+        this.updateCharts();
+        this.renderTable();
+    }
+
+    renderKPIs() {
+        const d = this.filteredData;
+        const totalBiz = d.length;
+        const totalCredits = d.reduce((s, b) => s + b.totalCredits, 0);
+        const totalFree = d.reduce((s, b) => s + b.freeCredits, 0);
+        const totalPaid = d.reduce((s, b) => s + b.paidCredits, 0);
+        const avgCredits = totalBiz ? Math.round(totalCredits / totalBiz) : 0;
+        const expiringSoon = d.filter(b => b.status === 'expiring').length;
+        const within30 = d.filter(b => b.daysLeft > 0 && b.daysLeft <= 30).length;
+        const within60 = d.filter(b => b.daysLeft > 0 && b.daysLeft <= 60).length;
+        const lowCredit = d.filter(b => b.totalCredits <= 100 && b.plan !== 'Freemium').length;
+
+        document.getElementById('kpi-row').innerHTML = `
+            <div class="kpi-card">
+                <div class="kpi-label">จำนวนธุรกิจ</div>
+                <div class="kpi-value purple">${totalBiz}</div>
+                <div class="kpi-sub">ธุรกิจที่แสดง</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">เครดิตรวมทั้งหมด</div>
+                <div class="kpi-value teal">${fmt(totalCredits)}</div>
+                <div class="kpi-sub">ฟรี ${fmt(totalFree)} + เติมเงิน ${fmt(totalPaid)}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">ต่ออายุด่วน (≤30d)</div>
+                <div class="kpi-value ${within30 > 0 ? 'rose' : 'green'}">${within30}</div>
+                <div class="kpi-sub">${within30 > 0 ? '🚨 ต้องดำเนินการด่วน!' : '✅ ปลอดภัย'}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">เตรียมต่ออายุ (≤60d)</div>
+                <div class="kpi-value ${within60 > 0 ? 'amber' : 'green'}">${within60}</div>
+                <div class="kpi-sub">${within60 > 0 ? '⚠️ ควรติดต่อลูกค้า' : '✅ ปลอดภัย'}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">เครดิตเหลือน้อย</div>
+                <div class="kpi-value ${lowCredit > 0 ? 'rose' : 'green'}">${lowCredit}</div>
+                <div class="kpi-sub">${lowCredit > 0 ? '🔋 ≤100 เครดิต' : '✅ เครดิตเพียงพอ'}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">เครดิตเติมเงินรวม</div>
+                <div class="kpi-value green">${fmt(totalPaid)}</div>
+                <div class="kpi-sub">จาก ${d.filter(b=>b.paidCredits>0).length} ธุรกิจ</div>
+            </div>
+        `;
+    }
+
+    renderCharts() {
+        this.renderBarChart();
+        this.renderDoughnutChart();
+        this.renderTop10Chart();
+        this.renderDailyEstChart();
+    }
+
+    updateCharts() {
+        Object.values(this.charts).forEach(c => c.destroy());
+        this.charts = {};
+        this.renderCharts();
+        this.renderRenewalCharts();
+    }
+
+    renderBarChart() {
+        const d = [...this.filteredData].sort((a,b) => b.totalCredits - a.totalCredits);
+        this.charts.bar = new Chart(document.getElementById('chartBar'), {
+            type: 'bar',
+            data: {
+                labels: d.map(b => b.name.length > 14 ? b.name.slice(0,14)+'…' : b.name),
+                datasets: [
+                    { label: 'เครดิตฟรี', data: d.map(b => b.freeCredits), backgroundColor: COLORS.orangeLight, borderColor: COLORS.orange, borderWidth: 1 },
+                    { label: 'เครดิตเติมเงิน', data: d.map(b => b.paidCredits), backgroundColor: COLORS.purpleLight, borderColor: COLORS.purple, borderWidth: 1 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' }, tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${fmt(ctx.raw)}` } } },
+                scales: { x: { stacked: true, ticks: { maxRotation: 45 } }, y: { stacked: true, ticks: { callback: v => fmt(v) } } }
+            }
+        });
+    }
+
+    renderDoughnutChart() {
+        const plans = {};
+        this.filteredData.forEach(b => { plans[b.plan] = (plans[b.plan] || 0) + 1; });
+        const planColors = { Starter: COLORS.orange, Standard: COLORS.purple, Freemium: '#b535a0' };
+        this.charts.doughnut = new Chart(document.getElementById('chartDoughnut'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(plans),
+                datasets: [{ data: Object.values(plans), backgroundColor: Object.keys(plans).map(p => planColors[p] || '#ccc'), borderWidth: 2, borderColor: '#fff' }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw} ธุรกิจ (${Math.round(ctx.raw/this.filteredData.length*100)}%)` } }
+                }
+            }
+        });
+    }
+
+    renderTop10Chart() {
+        const d = [...this.filteredData].sort((a,b) => b.paidCredits - a.paidCredits).slice(0, 10);
+        this.charts.top10 = new Chart(document.getElementById('chartTop10'), {
+            type: 'bar',
+            data: {
+                labels: d.map(b => b.name.length > 14 ? b.name.slice(0,14)+'…' : b.name),
+                datasets: [{ label: 'เครดิตเติมเงิน', data: d.map(b => b.paidCredits), backgroundColor: d.map((_, i) => COLORS.gradients[i % COLORS.gradients.length]), borderRadius: 6 }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `${fmt(ctx.raw)} เครดิต` } } },
+                scales: { x: { ticks: { callback: v => fmt(v) } } }
+            }
+        });
+    }
+
+    renderDailyEstChart() {
+        // For the first snapshot, we estimate daily usage based on free credit depletion
+        // Real daily averages will be calculated once we have 2+ weekly snapshots
+        const d = [...this.filteredData].filter(b => b.estimatedDailyUsage > 0).sort((a,b) => b.estimatedDailyUsage - a.estimatedDailyUsage);
+        this.charts.dailyEst = new Chart(document.getElementById('chartDailyEst'), {
+            type: 'bar',
+            data: {
+                labels: d.map(b => b.name.length > 14 ? b.name.slice(0,14)+'…' : b.name),
+                datasets: [
+                    { label: 'เฉลี่ย/วัน (จริง)', data: d.map(b => b.estimatedDailyUsage), backgroundColor: COLORS.orange + '80', borderColor: COLORS.orange, borderWidth: 1, borderRadius: 4 },
+                    { label: 'เฉลี่ย/สัปดาห์ (จริง)', data: d.map(b => b.estimatedWeeklyUsage), backgroundColor: COLORS.purple + '50', borderColor: COLORS.purple, borderWidth: 1, borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(2)} เครดิต` } }
+                },
+                scales: { x: { ticks: { maxRotation: 45 } }, y: { ticks: { callback: v => v.toFixed(1) } } }
+            }
+        });
+    }
+
+    renderAlerts() {
+        const alerts = [];
+        const d = this.rawData;
+
+        // 1. Renewal alerts (30-60-90 days)
+        d.filter(b => b.expiry && b.daysLeft > 0 && b.daysLeft <= 90).sort((a,b) => a.daysLeft - b.daysLeft).forEach(b => {
+            if (b.daysLeft <= 30) {
+                alerts.push({
+                    type: 'critical',
+                    icon: '🚨',
+                    title: `${b.name} — แพ็กเกจหมดอายุใน ${b.daysLeft} วัน!`,
+                    detail: `แพลน ${b.plan} หมดอายุ ${new Date(b.expiry).toLocaleDateString('th-TH', {day:'numeric',month:'long',year:'numeric'})} ต้องติดต่อต่ออายุด่วน!`,
+                    badge: `${b.daysLeft} วัน`,
+                    badgeClass: 'days-30'
+                });
+            } else if (b.daysLeft <= 60) {
+                alerts.push({
+                    type: 'warning',
+                    icon: '⚠️',
+                    title: `${b.name} — แพ็กเกจหมดอายุใน ${b.daysLeft} วัน`,
+                    detail: `แพลน ${b.plan} หมดอายุ ${new Date(b.expiry).toLocaleDateString('th-TH', {day:'numeric',month:'long',year:'numeric'})} ควรเริ่มเตรียมต่ออายุ`,
+                    badge: `${b.daysLeft} วัน`,
+                    badgeClass: 'days-60'
+                });
+            } else {
+                alerts.push({
+                    type: 'info',
+                    icon: '📋',
+                    title: `${b.name} — แพ็กเกจหมดอายุใน ${b.daysLeft} วัน`,
+                    detail: `แพลน ${b.plan} หมดอายุ ${new Date(b.expiry).toLocaleDateString('th-TH', {day:'numeric',month:'long',year:'numeric'})}`,
+                    badge: `${b.daysLeft} วัน`,
+                    badgeClass: 'days-90'
+                });
+            }
+        });
+
+        // 2. Low credit alerts (paid credits running low relative to usage)
+        d.filter(b => b.paidCredits > 0 && b.paidCredits < 500 && b.plan !== 'Freemium').forEach(b => {
+            alerts.push({
+                type: 'warning',
+                icon: '💳',
+                title: `${b.name} — เครดิตเติมเงินเหลือน้อย`,
+                detail: `เหลือ ${fmt(b.paidCredits)} เครดิต (ฟรี ${b.freeCredits}) อาจต้องเติมเร็วๆ นี้`,
+                badge: `${fmt(b.paidCredits)}`,
+                badgeClass: 'credit-low'
+            });
+        });
+
+        // 3. Zero paid credit with active plan
+        d.filter(b => b.paidCredits === 0 && b.freeCredits <= 5 && b.plan !== 'Freemium' && b.expiry).forEach(b => {
+            alerts.push({
+                type: 'critical',
+                icon: '🔋',
+                title: `${b.name} — เครดิตใกล้หมด!`,
+                detail: `เครดิตฟรีเหลือ ${b.freeCredits} และไม่มีเครดิตเติมเงิน — หากไม่เติม ระบบ OTP จะใช้งานไม่ได้`,
+                badge: 'เครดิตหมด',
+                badgeClass: 'days-30'
+            });
+        });
+
+        const el = document.getElementById('alert-list');
+        if (alerts.length === 0) {
+            el.innerHTML = '<div class="no-alerts"><span class="check">✅</span>ไม่มีแจ้งเตือน — ทุกธุรกิจยังปลอดภัย!</div>';
+        } else {
+            el.innerHTML = alerts.map(a => `
+                <div class="alert-item ${a.type}">
+                    <div class="alert-icon">${a.icon}</div>
+                    <div class="alert-content">
+                        <div class="alert-title">${a.title}</div>
+                        <div class="alert-detail">${a.detail}</div>
+                    </div>
+                    <span class="alert-badge ${a.badgeClass}">${a.badge}</span>
+                </div>
+            `).join('');
+        }
+    }
+
+    renderRenewalTimeline() {
+        const d = this.rawData.filter(b => b.expiry && b.daysLeft > 0).sort((a, b) => a.daysLeft - b.daysLeft);
+        const maxDays = Math.max(...d.map(b => b.daysLeft), 1);
+
+        const el = document.getElementById('renewal-timeline');
+        el.innerHTML = d.map(b => {
+            const pct = Math.min(Math.round(b.daysLeft / maxDays * 100), 100);
+            let barColor;
+            if (b.daysLeft <= 30) barColor = '#d42f4e';
+            else if (b.daysLeft <= 60) barColor = COLORS.orange;
+            else if (b.daysLeft <= 90) barColor = '#f59e0b';
+            else if (b.daysLeft <= 180) barColor = COLORS.purple;
+            else barColor = '#10b981';
+
+            const expiryStr = new Date(b.expiry).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+            return `<div class="timeline-row">
+                <div class="tl-name">${b.name}</div>
+                <div class="tl-bar-wrap">
+                    <div class="tl-bar" style="width:${pct}%; background:${barColor}">${b.daysLeft}d</div>
+                </div>
+                <div class="tl-date">${expiryStr}</div>
+            </div>`;
+        }).join('');
+    }
+
+    renderRenewalCharts() {
+        // Countdown chart
+        const renewalData = [...this.rawData].filter(b => b.expiry && b.daysLeft > 0).sort((a,b) => a.daysLeft - b.daysLeft);
+        const countdownColors = renewalData.map(b => {
+            if (b.daysLeft <= 30) return '#d42f4e';
+            if (b.daysLeft <= 60) return COLORS.orange;
+            if (b.daysLeft <= 90) return '#f59e0b';
+            return '#10b981';
+        });
+
+        this.charts.countdown = new Chart(document.getElementById('chartCountdown'), {
+            type: 'bar',
+            data: {
+                labels: renewalData.map(b => b.name.length > 12 ? b.name.slice(0,12)+'…' : b.name),
+                datasets: [{
+                    label: 'วันที่เหลือ',
+                    data: renewalData.map(b => b.daysLeft),
+                    backgroundColor: countdownColors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const b = renewalData[ctx.dataIndex];
+                                const zone = b.daysLeft <= 30 ? '🚨 ด่วนมาก!' : b.daysLeft <= 60 ? '⚠️ เตรียมต่ออายุ' : b.daysLeft <= 90 ? '📋 ติดตาม' : '✅ ปลอดภัย';
+                                return `${ctx.raw} วัน — ${zone}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { callback: v => v + 'd' },
+                        grid: {
+                            color: (ctx) => {
+                                if (ctx.tick.value === 30) return '#d42f4e44';
+                                if (ctx.tick.value === 60) return COLORS.orange + '44';
+                                return '#eee';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Credit health chart (low to high)
+        const creditData = [...this.rawData].filter(b => b.plan !== 'Freemium').sort((a,b) => a.totalCredits - b.totalCredits);
+        const creditColors = creditData.map(b => {
+            if (b.totalCredits <= 20) return '#d42f4e';
+            if (b.totalCredits <= 100) return COLORS.orange;
+            if (b.totalCredits <= 500) return '#f59e0b';
+            return COLORS.purple;
+        });
+
+        this.charts.creditHealth = new Chart(document.getElementById('chartCreditHealth'), {
+            type: 'bar',
+            data: {
+                labels: creditData.map(b => b.name.length > 12 ? b.name.slice(0,12)+'…' : b.name),
+                datasets: [{
+                    label: 'เครดิตรวม',
+                    data: creditData.map(b => b.totalCredits),
+                    backgroundColor: creditColors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: ctx => {
+                                const b = creditData[ctx.dataIndex];
+                                return `รวม ${fmt(b.totalCredits)} (ฟรี ${b.freeCredits} + เติมเงิน ${fmt(b.paidCredits)})`;
+                            }
+                        }
+                    }
+                },
+                scales: { x: { ticks: { callback: v => fmt(v) } } }
+            }
+        });
+    }
+
+    renderAnalysis() {
+        const d = this.rawData;
+        const totalCredits = d.reduce((s, b) => s + b.totalCredits, 0);
+        const totalPaid = d.reduce((s, b) => s + b.paidCredits, 0);
+        const topUser = [...d].sort((a,b) => b.paidCredits - a.paidCredits)[0];
+        const zeroCredit = d.filter(b => b.totalCredits <= 20 && b.paidCredits === 0);
+        const heavyUsers = d.filter(b => b.paidCredits >= 1000);
+        const expiringSoon = d.filter(b => b.status === 'expiring');
+
+        const analyses = [
+            {
+                title: 'ภาพรวมเครดิต SMS OTP',
+                detail: `ทั้ง ${d.length} ธุรกิจมีเครดิตรวม <span class="highlight">${fmt(totalCredits)}</span> เครดิต — แบ่งเป็นเครดิตเติมเงิน ${fmt(totalPaid)} (${Math.round(totalPaid/totalCredits*100)}%) เฉลี่ยต่อธุรกิจ = <span class="highlight">${fmt(Math.round(totalCredits/d.length))}</span> เครดิต`
+            },
+            {
+                title: 'ธุรกิจที่ใช้เครดิตเติมเงินสูงสุด',
+                detail: `<span class="highlight">${topUser.name}</span> มีเครดิตเติมเงิน ${fmt(topUser.paidCredits)} เครดิต — น่าจะเป็นธุรกิจที่ส่ง OTP ให้ลูกค้าบ่อยที่สุด`
+            },
+            {
+                title: 'Heavy Users (เติมเงิน ≥1,000)',
+                detail: `มี <span class="highlight">${heavyUsers.length}</span> ธุรกิจ: ${heavyUsers.map(b => b.name).join(', ')} — กลุ่มนี้ใช้ SMS OTP อย่างจริงจัง ควรดูแลเป็นพิเศษ`
+            },
+            {
+                title: 'ธุรกิจที่ยังไม่เติมเครดิต',
+                detail: `มี <span class="highlight">${zeroCredit.length}</span> ธุรกิจที่เครดิตเติมเงิน = 0: ${zeroCredit.map(b => b.name).join(', ')} — อาจเป็น Free Trial หรือยังไม่เริ่มใช้งานจริง`
+            },
+            {
+                title: '📈 Δ สัปดาห์นี้ (Week #1 → #2, 5 วัน)',
+                detail: (() => {
+                    const used = CREDIT_DELTAS.filter(cd => cd.delta > 0);
+                    const topped = CREDIT_DELTAS.filter(cd => cd.topUp > 0);
+                    const totalUsed = used.reduce((s, cd) => s + cd.delta, 0);
+                    const totalTopUp = topped.reduce((s, cd) => s + cd.topUp, 0);
+                    let msg = `ใช้จริง <span class="highlight">${fmt(totalUsed)}</span> เครดิต จาก ${used.length} ธุรกิจ: ${used.map(cd => `${cd.name} (-${cd.delta})`).join(', ')}`;
+                    if (topped.length > 0) msg += `<br>เติมเครดิตใหม่: ${topped.map(cd => `<span style="color:#10b981;font-weight:600">${cd.name} (+${fmt(cd.topUp)})</span>`).join(', ')}`;
+                    msg += `<br>เฉลี่ยทั้งระบบ: <span class="highlight">${(totalUsed / 5).toFixed(1)}</span> เครดิต/วัน`;
+                    return msg;
+                })()
+            },
+            {
+                title: 'ธุรกิจใกล้หมดอายุ',
+                detail: expiringSoon.length > 0
+                    ? `<span class="warning-text">${expiringSoon.length} ธุรกิจ</span>ใกล้หมดอายุ: ${expiringSoon.map(b => `${b.name} (เหลือ ${b.daysLeft} วัน)`).join(', ')}`
+                    : 'ไม่มีธุรกิจที่ใกล้หมดอายุภายใน 90 วัน'
+            }
+        ];
+
+        // Renewal & credit trend analyses
+        const within30 = d.filter(b => b.daysLeft > 0 && b.daysLeft <= 30);
+        const within60 = d.filter(b => b.daysLeft > 30 && b.daysLeft <= 60);
+        const within90 = d.filter(b => b.daysLeft > 60 && b.daysLeft <= 90);
+
+        analyses.push({
+            title: '🚨 ต่ออายุด่วน (≤30 วัน)',
+            detail: within30.length > 0
+                ? `<span class="warning-text">${within30.length} ธุรกิจ</span>ต้องต่ออายุภายใน 30 วัน: ${within30.map(b => `<strong>${b.name}</strong> (${b.daysLeft}d, ${b.plan})`).join(', ')}`
+                : '<span style="color:#10b981">ไม่มีธุรกิจที่ต้องต่ออายุด่วน</span>'
+        });
+
+        analyses.push({
+            title: '⚠️ เตรียมต่ออายุ (31-60 วัน)',
+            detail: within60.length > 0
+                ? `${within60.length} ธุรกิจควรเริ่มเตรียม: ${within60.map(b => `<strong>${b.name}</strong> (${b.daysLeft}d)`).join(', ')}`
+                : '<span style="color:#10b981">ไม่มี</span>'
+        });
+
+        analyses.push({
+            title: '📋 ติดตาม (61-90 วัน)',
+            detail: within90.length > 0
+                ? `${within90.length} ธุรกิจ: ${within90.map(b => `<strong>${b.name}</strong> (${b.daysLeft}d)`).join(', ')}`
+                : '<span style="color:#10b981">ไม่มี</span>'
+        });
+
+        // Renewal rate by quarter
+        const quarters = {};
+        d.filter(b => b.expiry).forEach(b => {
+            const date = new Date(b.expiry);
+            const q = `Q${Math.ceil((date.getMonth()+1)/3)}/${date.getFullYear()}`;
+            quarters[q] = (quarters[q] || 0) + 1;
+        });
+        const qStr = Object.entries(quarters).map(([q, n]) => `${q}: ${n} ธุรกิจ`).join(' | ');
+        analyses.push({
+            title: '📊 แนวโน้มการต่ออายุรายไตรมาส',
+            detail: `กระจายตาม Quarter ที่หมดอายุ: ${qStr} — ไตรมาสที่มีหมดอายุเยอะต้องเตรียม capacity ทีม Sales/CS ล่วงหน้า`
+        });
+
+        // Credit depletion risk
+        const lowCreditActive = d.filter(b => b.totalCredits <= 100 && b.plan !== 'Freemium' && b.daysLeft > 0);
+        analyses.push({
+            title: '🔋 ธุรกิจที่เครดิตเหลือน้อย (≤100)',
+            detail: lowCreditActive.length > 0
+                ? `<span class="warning-text">${lowCreditActive.length} ธุรกิจ</span>เครดิตเหลือน้อยมาก: ${lowCreditActive.map(b => `<strong>${b.name}</strong> (${fmt(b.totalCredits)} เครดิต)`).join(', ')} — ควรแนะนำให้เติมเครดิตก่อนหมด`
+                : '<span style="color:#10b981">ทุกธุรกิจมีเครดิตเพียงพอ</span>'
+        });
+
+        document.getElementById('analysis-grid').innerHTML = analyses.map(a => `
+            <div class="analysis-item">
+                <div class="title">${a.title}</div>
+                <div class="detail">${a.detail}</div>
+            </div>
+        `).join('');
+    }
+
+    renderTable() {
+        const cols = [
+            { key: 'name', label: 'ธุรกิจ' },
+            { key: 'plan', label: 'แพลน' },
+            { key: 'status', label: 'สถานะ' },
+            { key: 'expiry', label: 'หมดอายุ' },
+            { key: 'freeCredits', label: 'เครดิตฟรี' },
+            { key: 'paidCredits', label: 'เครดิตเติมเงิน' },
+            { key: 'totalCredits', label: 'เครดิตรวม' },
+            { key: 'weeklyDelta', label: 'Δ สัปดาห์นี้' },
+            { key: 'estimatedDailyUsage', label: 'เฉลี่ย/วัน' },
+            { key: 'estimatedWeeklyUsage', label: 'เฉลี่ย/สัปดาห์' }
+        ];
+
+        document.getElementById('table-head').innerHTML = '<tr>' + cols.map(c =>
+            `<th onclick="dashboard.sortTable('${c.key}')">${c.label} <span class="sort-arrow">▼</span></th>`
+        ).join('') + '</tr>';
+
+        const maxTotal = Math.max(...this.filteredData.map(b => b.totalCredits), 1);
+
+        document.getElementById('table-body').innerHTML = this.filteredData.map(b => {
+            const pct = Math.round(b.totalCredits / maxTotal * 100);
+            const barColor = b.totalCredits > 2000 ? COLORS.purple : b.totalCredits > 500 ? COLORS.orange : '#b535a0';
+            const planClass = b.plan.toLowerCase();
+            const expiryStr = b.expiry ? new Date(b.expiry).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '-';
+            return `<tr>
+                <td><strong>${b.name}</strong></td>
+                <td><span class="plan-badge ${planClass}">${b.plan}</span></td>
+                <td><span class="status-dot ${b.status}"></span>${getStatusLabel(b.status)}</td>
+                <td>${expiryStr}${b.daysLeft < 9999 ? ` <small style="color:#999">(${b.daysLeft}d)</small>` : ''}</td>
+                <td style="text-align:right">${fmt(b.freeCredits)}</td>
+                <td style="text-align:right; font-weight:600">${fmt(b.paidCredits)}</td>
+                <td>
+                    <div class="credit-bar">
+                        <div class="bar-bg"><div class="bar-fill" style="width:${pct}%; background:${barColor}"></div></div>
+                        <div class="bar-num">${fmt(b.totalCredits)}</div>
+                    </div>
+                </td>
+                <td style="text-align:right">${(() => {
+                    const d = CREDIT_DELTAS.find(cd => cd.name === b.name);
+                    if (!d) return '-';
+                    if (d.topUp > 0) return '<span style="color:#10b981;font-weight:600">+' + fmt(d.topUp) + ' (เติม)</span>';
+                    if (d.delta > 0) return '<span style="color:#d42f4e;font-weight:600">-' + fmt(d.delta) + '</span>';
+                    return '<span style="color:#999">0</span>';
+                })()}</td>
+                <td style="text-align:right">${b.estimatedDailyUsage > 0 ? b.estimatedDailyUsage.toFixed(2) : '-'}</td>
+                <td style="text-align:right">${b.estimatedWeeklyUsage > 0 ? b.estimatedWeeklyUsage.toFixed(2) : '-'}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    sortTable(key) {
+        if (this.sortCol === key) {
+            this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.sortCol = key;
+            this.sortDir = key === 'name' ? 'asc' : 'desc';
+        }
+        this.filteredData.sort((a, b) => {
+            let va = a[key], vb = b[key];
+            if (va === null) va = this.sortDir === 'asc' ? Infinity : -Infinity;
+            if (vb === null) vb = this.sortDir === 'asc' ? Infinity : -Infinity;
+            if (typeof va === 'string') return this.sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+            return this.sortDir === 'asc' ? va - vb : vb - va;
+        });
+        this.renderTable();
+    }
+}
+
+const dashboard = new Dashboard(BUSINESSES);
+</script>
+</body>
+</html>
